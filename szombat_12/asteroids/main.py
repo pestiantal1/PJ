@@ -55,20 +55,34 @@ def main():
             asteroid.update(WIDTH, HEIGHT)
 
         # --- Bullet-Asteroid Collision ---
-        for bullet in bullets[:]:
-            for asteroid in asteroids[:]:
-                if check_collision(bullet, asteroid, bullet.radius, asteriod.radius):
-                    bullets.remove(bullet)
-                    asteroids.remove(asteriod)
-                    asteroids.extend(asteroid.split())
+        bullets_to_remove = []
+        asteroids_to_remove = []
+        asteroids_to_add = []
+        
+        for bullet in bullets:
+            for asteroid in asteroids:
+                if check_collision(bullet, asteroid, bullet.radius, asteroid.radius):
+                    if bullet not in bullets_to_remove:
+                        bullets_to_remove.append(bullet)
+                    if asteroid not in asteroids_to_remove:
+                        asteroids_to_remove.append(asteroid)
+                        asteroids_to_add.extend(asteroid.split())
                     break
+        
+        # Remove bullets and asteroids that collided
+        for bullet in bullets_to_remove:
+            bullets.remove(bullet)
+        for asteroid in asteroids_to_remove:
+            asteroids.remove(asteroid)
+        # Add new asteroids from splits
+        asteroids.extend(asteroids_to_add)
 
         # --- Drawing ---
-        screen.fill((0, 0, 0))  # clear screen with black
+        screen.fill((0, 0, 0))
         player.draw(screen)
         for bullet in bullets:
             bullet.draw(screen)
-        for asteriod in asteroids:
+        for asteroid in asteroids:
             asteroid.draw(screen)
         pygame.display.flip()
 
