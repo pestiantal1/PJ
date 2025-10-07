@@ -228,7 +228,7 @@ class Model:
         """
         return self.grid.get_cell_color(i, j)
     
-    def randomize(self):
-        """Véletlenszerűsíti a rácsot, ha nem fut a szimuláció"""
-        if not self.is_running:
-            self.grid.randomize()
+    # def randomize(self):
+    #     """Véletlenszerűsíti a rácsot, ha nem fut a szimuláció"""
+    #     if not self.is_running:
+    #         self.grid.randomize()
