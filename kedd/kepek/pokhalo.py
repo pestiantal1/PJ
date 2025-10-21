@@ -22,32 +22,33 @@ pygame.display.set_caption("Pókok a sarokokban")
 
 # Rajzolási parancs definiálása
 def draw_rect_corners(length):
+    pass
     # Egyetlen Rect objektum létrehozása
     rect = pygame.Rect(0, 0, length, length)
     
     # Bal felső sarok
-    rect.topleft = (0, 0)
+    rect.topleft = (0,0)
     pygame.draw.rect(screen, BLACK, rect)
     
     # Jobb felső sarok
     rect.topright = (SCREEN_WIDTH, 0)
     pygame.draw.rect(screen, BLACK, rect)
-    
+        
     # Bal alsó sarok
     rect.bottomleft = (0, SCREEN_HEIGHT)
     pygame.draw.rect(screen, BLACK, rect)
     
     # Jobb alsó sarok
-    rect.bottomright = (SCREEN_WIDTH, SCREEN_HEIGHT)
+    rect.bottomright = (SCREEN_WIDTH,SCREEN_HEIGHT)
     pygame.draw.rect(screen, BLACK, rect)
-
+    
 def main():
 
     # Rajzolási parancsok kiadása
     screen.fill(BACKGROUNG_COLOR)
     draw_rect_corners(20)
 
-    # Képernyő frissítése 
+    # Képernyő frissítése
     pygame.display.flip()
 
     # Program megállítása, hogy lássuk amit rajzoltunk.

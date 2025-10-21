@@ -23,12 +23,21 @@ clock = pygame.time.Clock()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Erdő")
 
-# Kép(ek) betöltése
+# Kép(ek) betöltése és méretezése
 bg_sky = pygame.image.load("bg-sky.png")
-bg_trees_back = pygame.image.load("bg-trees-back.png")
-bg_trees_middle = pygame.image.load("bg-trees-middle.png")
-bg_trees_front = pygame.image.load("bg-trees-front.png")
+bg_sky = pygame.transform.scale(bg_sky, (SCREEN_WIDTH, SCREEN_HEIGHT))
+
+fg_forest = pygame.image.load("fg-forest.png")
+fg_forest = pygame.transform.scale(fg_forest, (SCREEN_WIDTH, SCREEN_HEIGHT))
+
+fg_trees = pygame.image.load("fg-trees.png")
+fg_trees = pygame.transform.scale(fg_trees, (SCREEN_WIDTH, SCREEN_HEIGHT))
+
+mid_mountains = pygame.image.load("mid-mountains.png")
+mid_mountains = pygame.transform.scale(mid_mountains, (SCREEN_WIDTH, SCREEN_HEIGHT))
+
 bear_surf = pygame.image.load("bear.png")
+# A medvét nem méretezzük át, megtartjuk az eredeti méretét
 
 def main():
 
@@ -67,15 +76,16 @@ def main():
         
         # Háttér rétegek
         screen.blit(bg_sky, (0, 0))
-        screen.blit(bg_trees_back, (0, 0))
-        screen.blit(bg_trees_middle, (0, 0))
+        
+        screen.blit(mid_mountains, (0, 0))
+        screen.blit(fg_forest, (0, 0))
         
         # Medve kirajzolása
         bear_rect = bear_surf.get_rect(midbottom=(bear_pos, SCREEN_HEIGHT))
         screen.blit(bear_surf, bear_rect)
         
         # Előtér fa réteg (medve előtt)
-        screen.blit(bg_trees_front, (0, 0))
+        screen.blit(fg_trees, (0, 0))
 
         # Képernyő frissítése
         pygame.display.flip()

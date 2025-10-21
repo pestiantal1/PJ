@@ -39,9 +39,8 @@ def main():
 
         # Elemek kirajzolása
         screen.fill(WHITE)
+        screen.blit(bg_sky, (0,0))
         
-        # Háttérkép kirajzolása
-        screen.blit(bg_sky, (0, 0))
 
         # Képernyő frissítése
         pygame.display.flip()
