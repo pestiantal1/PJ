@@ -1,4 +1,6 @@
 import math
+from sprite_animator import SpriteAnimator, create_enemy_frame_data
+import os
 
 TILE_SIZE = 100
 
@@ -8,11 +10,33 @@ class Enemy:
         self.y = y
         self.speed = speed
         self.active = True
+        
+        # Animation setup
+        self.animator = None
+        self.anim_timer = 0.0
+        self.frame_duration = 0.15  # Time between walk frames
+        self.current_sprite = None
+        
+        # Load animation
+        self._load_animation()
     
-    def update(self, player, game_map):
-        """Update enemy position to chase player"""
+    def _load_animation(self):
+        """Load the enemy sprite animation"""
+        try:
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            sprite_path = os.path.join(script_dir, 'res/textures', 'enemy_sheet.png')
+            
+            frame_data = create_enemy_frame_data()
+            self.animator = SpriteAnimator(sprite_path, frame_data, scale=2.0)
+            self.current_sprite = self.animator.frames[0][0]
+            print("✓ Enemy 8-directional animation loaded!")
+        except Exception as e:
+            print(f"✗ Error loading enemy animation: {e}")
+    
+    def update(self, player, game_map, dt=0.016):
+        """Update enemy position and animation"""
         if not self.active:
-            return
+            return 999999
         
         # Calculate direction to player
         dx = player.x - self.x
@@ -36,7 +60,30 @@ class Enemy:
                     self.x = new_x
                     self.y = new_y
         
+        # Update animation
+        if self.animator:
+            self.anim_timer += dt
+            if self.anim_timer >= self.frame_duration:
+                self.anim_timer = 0.0
+                self.animator.next_frame()
+        
         return distance
+    
+    def get_sprite(self, player):
+        """Get current sprite frame based on player viewing angle"""
+        if not self.animator:
+            return self.current_sprite
+        
+        # Calculate angle from player to enemy
+        dx = self.x - player.x
+        dy = self.y - player.y
+        angle_to_enemy = math.atan2(dy, dx)
+        
+        # Get appropriate direction sprite
+        direction = self.animator.get_direction_index(angle_to_enemy, player.angle)
+        frame_index = self.animator.current_frame
+        
+        return self.animator.get_frame(direction, frame_index)
     
     def get_distance_to(self, x, y):
         """Calculate distance to a point"""
@@ -63,10 +110,10 @@ class EnemyManager:
         self.enemies.append(enemy)
         return enemy
     
-    def update_all(self, player, game_map):
+    def update_all(self, player, game_map, dt=0.016):
         """Update all enemies"""
         for enemy in self.enemies:
-            enemy.update(player, game_map)
+            enemy.update(player, game_map, dt)
     
     def check_collision_with_player(self, player, damage_radius=40):
         """Check if any enemy is touching the player"""
@@ -85,5 +132,5 @@ class EnemyManager:
         return [enemy.to_dict() for enemy in self.enemies if enemy.active]
     
     def get_all_enemies(self):
-        """Get all enemies (for compatibility)"""
+        """Get all enemies"""
         return self.enemies

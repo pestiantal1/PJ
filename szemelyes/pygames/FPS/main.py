@@ -3,6 +3,7 @@ import math
 import sys
 import os
 from enemy_ai import EnemyManager
+from gun import Gun, draw_gun
 
 # Initialize Pygame
 pygame.init()
@@ -295,7 +296,7 @@ def render_3d(screen, player):
     
     return depth_buffer
 
-def render_sprites(screen, player, money_sprite, granny_sprite, depth_buffer, enemy_manager):
+def render_sprites(screen, player, money_sprite, depth_buffer, enemy_manager):
     """Render collectible sprites and enemies in 3D view with depth checking"""
     sprites_to_draw = []
     
@@ -304,29 +305,21 @@ def render_sprites(screen, player, money_sprite, granny_sprite, depth_buffer, en
         if item['collected']:
             continue
         
-        # Calculate sprite position relative to player
         dx = item['x'] - player.x
         dy = item['y'] - player.y
         
-        # Get distance and angle to sprite
         distance = math.sqrt(dx * dx + dy * dy)
         angle_to_sprite = math.atan2(dy, dx)
         
-        # Get angle relative to player view
         angle_diff = angle_to_sprite - player.angle
         
-        # Normalize angle to -pi to pi
         while angle_diff > math.pi:
             angle_diff -= 2 * math.pi
         while angle_diff < -math.pi:
             angle_diff += 2 * math.pi
         
-        # Check if sprite is in field of view
         if abs(angle_diff) < HALF_FOV and distance > 0:
-            # Calculate screen position
             screen_x = (angle_diff / FOV + 0.5) * WIDTH
-            
-            # Calculate sprite size based on distance
             sprite_height = min(int(TILE_SIZE * HEIGHT / distance), HEIGHT)
             sprite_width = sprite_height
             
@@ -339,7 +332,7 @@ def render_sprites(screen, player, money_sprite, granny_sprite, depth_buffer, en
                 'width': sprite_width
             })
     
-    # Add enemies
+    # Add enemies with directional animated sprites
     for enemy in enemy_manager.get_all_enemies():
         if not enemy.active:
             continue
@@ -361,14 +354,17 @@ def render_sprites(screen, player, money_sprite, granny_sprite, depth_buffer, en
             sprite_height = min(int(TILE_SIZE * HEIGHT / distance), HEIGHT)
             sprite_width = sprite_height
             
-            sprites_to_draw.append({
-                'type': 'enemy',
-                'sprite': granny_sprite,
-                'distance': distance,
-                'screen_x': screen_x,
-                'height': sprite_height,
-                'width': sprite_width
-            })
+            # Get directional sprite based on player view angle
+            enemy_sprite = enemy.get_sprite(player)
+            if enemy_sprite:
+                sprites_to_draw.append({
+                    'type': 'enemy',
+                    'sprite': enemy_sprite,
+                    'distance': distance,
+                    'screen_x': screen_x,
+                    'height': sprite_height,
+                    'width': sprite_width
+                })
     
     # Sort sprites by distance (furthest first)
     sprites_to_draw.sort(key=lambda s: s['distance'], reverse=True)
@@ -378,25 +374,19 @@ def render_sprites(screen, player, money_sprite, granny_sprite, depth_buffer, en
         scaled_sprite = pygame.transform.scale(sprite_data['sprite'], 
                                                (sprite_data['width'], sprite_data['height']))
         
-        # Apply distance shading
         shade = max(50, min(255, 255 - int(sprite_data['distance'] * 0.3)))
         shade_surface = pygame.Surface(scaled_sprite.get_size())
         shade_surface.fill((shade, shade, shade))
         scaled_sprite.blit(shade_surface, (0, 0), special_flags=pygame.BLEND_MULT)
         
-        # Calculate sprite position
         sprite_x = int(sprite_data['screen_x'] - sprite_data['width'] / 2)
         sprite_y = int(HEIGHT / 2 - sprite_data['height'] / 2)
         
-        # Draw sprite column by column with depth testing
         for x_offset in range(sprite_data['width']):
             screen_col = sprite_x + x_offset
             
-            # Check if within screen bounds
             if 0 <= screen_col < WIDTH:
-                # Only draw if sprite is closer than the wall at this column
                 if sprite_data['distance'] < depth_buffer[screen_col]:
-                    # Extract this column from the sprite
                     sprite_column = pygame.Surface((1, sprite_data['height']), pygame.SRCALPHA)
                     sprite_column.blit(scaled_sprite, (0, 0), (x_offset, 0, 1, sprite_data['height']))
                     screen.blit(sprite_column, (screen_col, sprite_y))
@@ -478,29 +468,25 @@ def main():
     pygame.display.set_caption("Doom-style FPS")
     clock = pygame.time.Clock()
     
-    # Load texture AFTER display mode is set
     global wall_texture
     wall_texture = load_texture()
     
-    # Load money sprite
     money_sprite = load_money_sprite()
     
-    # Load granny sprite
-    granny_sprite = load_granny_sprite()
-    
-    # Load and play music
     load_music()
     
-    # Create player in center of map
     player = Player(TILE_SIZE * 1.5, TILE_SIZE * 1.5)
     
-    # Create enemy manager and add enemies
+    # Initialize gun
+    gun = Gun()
+    
     enemy_manager = EnemyManager()
     enemy_manager.add_enemy(400, 200, speed=1.5)
     enemy_manager.add_enemy(600, 500, speed=1.0)
     
     running = True
     while running:
+        dt = clock.tick(60) / 1000.0  # Delta time in seconds
         current_time = pygame.time.get_ticks()
         
         for event in pygame.event.get():
@@ -509,7 +495,6 @@ def main():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     running = False
-                # Toggle music with M key
                 if event.key == pygame.K_m:
                     if pygame.mixer.music.get_busy():
                         pygame.mixer.music.pause()
@@ -517,38 +502,51 @@ def main():
                     else:
                         pygame.mixer.music.unpause()
                         print("Music resumed")
+                # Shooting with spacebar
+                if event.key == pygame.K_SPACE:
+                    if gun.shoot():
+                        print("BANG!")
+                        # TODO: Add bullet/raycast hit detection here
         
         keys = pygame.key.get_pressed()
         player.move(keys)
         player.check_collectibles()
         
-        # Update enemies
-        enemy_manager.update_all(player, MAP)
+        # Update gun animation
+        gun.update(dt)
         
-        # Check for enemy damage
+        # Update enemies with delta time
+        enemy_manager.update_all(player, MAP, dt)
+        
         collision, enemy = enemy_manager.check_collision_with_player(player)
         if collision:
             game_over = player.take_damage(10, current_time)
             if game_over:
                 running = False
         
-        # Render
         screen.fill(BLACK)
         depth_buffer = render_3d(screen, player)
-        render_sprites(screen, player, money_sprite, granny_sprite, depth_buffer, enemy_manager)
+        render_sprites(screen, player, money_sprite, depth_buffer, enemy_manager)
+        
+        # Draw gun on top of 3D view
+        draw_gun(screen, gun, WIDTH, HEIGHT)
+        
         draw_minimap(screen, player, enemy_manager)
         
-        # Display FPS, money, and health
         font = pygame.font.Font(None, 36)
         fps_text = font.render(f"FPS: {int(clock.get_fps())}", True, WHITE)
         money_text = font.render(f"Money: ${player.money}", True, YELLOW)
         health_text = font.render(f"Health: {player.health}", True, RED if player.health < 30 else WHITE)
+        
+        # Add ammo counter
+        ammo_text = font.render(f"Ready" if gun.can_shoot() else "Reloading...", True, WHITE)
+        
         screen.blit(fps_text, (WIDTH - 150, 10))
         screen.blit(money_text, (10, HEIGHT - 50))
         screen.blit(health_text, (10, HEIGHT - 90))
+        screen.blit(ammo_text, (WIDTH - 200, HEIGHT - 50))
         
         pygame.display.flip()
-        clock.tick(60)
     
     pygame.quit()
     sys.exit()
