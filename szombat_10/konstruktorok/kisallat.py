@@ -1,6 +1,15 @@
 import datetime
 class Allat:
+    """ Állat osztály állatokhoz
+    
+    """
+    
     def __init__(self, nev):
+        """Konstruktor
+
+        Args:
+            nev (string): ez az állat neve
+        """
         self.nev = nev
         self.ehseg = 0 #(Az állat éhsége, idővel folyamatosan növekszik, minimuma 0, kezdetben 0)
         self.boldogsag = 100 #(Az állat boldogsága, idővel folyamatosan csökken, maximuma 120, kezdetben 100)
@@ -24,14 +33,26 @@ class Allat:
         print(f'{self.nev} boldogsági szintje: {self.boldogsag}, éhség: {self.ehseg} ')
     
     def ido(self, eltelt): #(Változtatja az éhséget és a boldogságot eltelt egységgel)
+        """_summary_
+
+        Args:
+            eltelt (int): eltelt ido masodpercben 
+        """
         self.ehseg += eltelt
         self.boldogsag -= eltelt
         
         if self.boldogsag < 0:
             self.boldogsag = 0
+            
+    def __str__(self):
+        return f'{self.nev} {self.ehseg} {self.boldogsag}'
 
 # menü kiírása
 def kiiras():
+    """
+    Kiirja a menü opcióit
+    
+    """
     print('1 - Etetés')
     print('2 - Játék')
     print('3 - Alvás')

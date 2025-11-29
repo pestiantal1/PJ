@@ -4,10 +4,20 @@ import sys
 import pickle
 
 def mentes(adatok):
+    """A mentés lement bemeneti adatokat a mentes.txt fájlba, a pickle.dumb metódussal
+
+    Args:
+        adatok (list): Ezek a lementendő adatok listás formában
+    """
     with open("mentes.txt", "wb") as f:
         pickle.dump(adatok, f)
 
 def betoltes():
+    """Betölti az adatokat a mentes.txt fájlból
+
+    Returns:
+        list: Ez a mentes.txt-ben tárolt lista
+    """
     adatok = []
     if os.path.exists("mentes.txt"):
         with open("mentes.txt", "rb") as f:
