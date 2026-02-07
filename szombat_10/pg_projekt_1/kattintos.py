@@ -1,5 +1,7 @@
 import pygame
 from enum import Enum
+import pickle
+import json
 
 # Game_State enum
 class Game_State(Enum):
@@ -60,12 +62,27 @@ def draw_scores(scores):
     Kirajzolja a ponttáblát a képernyőre
     """
     screen.fill(GREEN)
+    
+    title_text = "Név és pont"
+    title_surface = font.render(title_text, True, BLACK)
+    title_width, _ = font.size(title_text)
+    screen.blit(title_surface, ((SCREEN_WIDTH - title_width) / 2, 20))
+    
+    ctr = 1
+    for name, score in scores.items():
+        score_text = f"{name} - {score}"
+        score_surface = font.render(score_text, True, BLACK)
+        score_width, _ = font.size(score_text)
+        screen.blit(score_surface, ((SCREEN_WIDTH - score_width) / 2, 20 + ctr * 40))  # Centered score
+        ctr += 1
 
 def draw_points(point_list):
     """
     Kirajzolja a pontokat a listában megadott helyekre
     """
-    pass
+    for i in range(len(point_list)):
+        pygame.draw.circle(screen, BLACK, point_list[i], 5)
+    
 
 def draw_triangles(point_list):
     """
@@ -86,7 +103,24 @@ def draw_triangles(point_list):
         ]
         pygame.draw.polygon(screen, BLACK, triangle_points, 1)
     
+
+def save_scores(adatok):
+    try:
+        with open("scores.txt", "xb") as f:
+            pickle.dump({}, f)
+    except FileExistsError:
+        pass
     
+    with open("scores.txt", "wb") as f:
+        pickle.dump(adatok, f)
+    
+def load_scores():
+    try:
+        with open("scores.txt", "rb") as f:
+            return pickle.load(f)
+    except FileNotFoundError:
+        return {}
+
 # Segédfüggvények
 def move_points(point_list, offset):
     """
@@ -109,21 +143,24 @@ def modify_direction(key, direction, speed):
 
 def main():
     # Változók előkészítése
+    
+    
     running = True
     
     game_state = Game_State.MENU
     
     player_name = ""
     score = 0
-    scores = []
+    
+    scores = load_scores()
     
     click_points = []
-    
+
     
     # Game loop
     while running:
-        print(game_state) # debug
-        
+        # print(game_state) # debug
+        # print(scores)
         # Esemény kezelés
         for event in pygame.event.get():
             # folyamatosan figyelt események
@@ -147,16 +184,27 @@ def main():
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         game_state = Game_State.SCORES
+                        #frisstine a scores szotarat
+                        if player_name in scores:
+                            if score > scores[player_name]:
+                                scores[player_name] = score
+                        else:
+                            scores[player_name] = score
+                        save_scores(scores)
+                        
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     score += 1
                     # print(event.dict["pos"])
+                    # pygame.mouse.get_pos()
                     click_points.append(event.dict["pos"])
-            
             
             # scores közben figyelt események
             if game_state == Game_State.SCORES:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_RETURN:
+                        score = 0
+                        player_name = ""
+                        click_points = []
                         game_state = Game_State.MENU
             
             pass
@@ -178,6 +226,7 @@ def main():
         if game_state == Game_State.PLAYING:
             draw_game(player_name, score)
             draw_triangles(click_points)
+            draw_points(click_points)
         if game_state == Game_State.SCORES:
             draw_scores(scores) 
         # Képernyő frissítése
