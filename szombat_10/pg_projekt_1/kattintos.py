@@ -122,12 +122,17 @@ def load_scores():
         return {}
 
 # Segédfüggvények
-def move_points(point_list, offset):
+def move_points(point_list, offset, speed):
     """
     Megváltoztatja az összes pont koordinátáját az offset ( list(x,y) ) mértékével.
     Visszatér az új pontlistával
     """
-    pass
+    new_points = []
+    for point in point_list:
+        new_x = point[0] + offset[0] * speed
+        new_y = point[1] + offset[1] * speed
+        new_points.append((new_x, new_y))
+    return new_points
 
 def calculate_score(triangle_coords):
     """
@@ -156,10 +161,14 @@ def main():
     
     click_points = []
 
+    direction = [0,0]
+
+    speed = 1
     
     # Game loop
     while running:
         # print(game_state) # debug
+        print(speed)
         # print(scores)
         # Esemény kezelés
         for event in pygame.event.get():
@@ -192,12 +201,37 @@ def main():
                             scores[player_name] = score
                         save_scores(scores)
                         
-                if event.type == pygame.MOUSEBUTTONDOWN:
+                    elif event.key == pygame.K_UP:
+                        direction[0] = -1
+                    elif event.key == pygame.K_DOWN:
+                        direction[0] = 1
+                    elif event.key == pygame.K_LEFT:
+                        direction[1] = -1
+                    elif event.key == pygame.K_RIGHT:
+                        direction[1] = 1
+                        
+                if event.type == pygame.KEYUP:
+                    if event.key == pygame.K_UP or event.key == pygame.K_DOWN:
+                        direction[0] = 0
+                    elif event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
+                        direction[1] = 0
+                    
+                        
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     score += 1
                     # print(event.dict["pos"])
                     # pygame.mouse.get_pos()
                     click_points.append(event.dict["pos"])
             
+            
+                if event.type == pygame.MOUSEWHEEL:
+                    speed += event.y
+                    
+                    if speed < 1:
+                        speed = 1
+                    if speed > 100:
+                        speed = 100
+                        
             # scores közben figyelt események
             if game_state == Game_State.SCORES:
                 if event.type == pygame.KEYDOWN:
@@ -224,6 +258,11 @@ def main():
         if game_state == Game_State.MENU:
             draw_menu(player_name)
         if game_state == Game_State.PLAYING:
+            
+            if direction[0] != 0 or direction[1] != 0:
+                offset = (direction[1], direction[0])
+                click_points = move_points(click_points, offset, speed)
+            
             draw_game(player_name, score)
             draw_triangles(click_points)
             draw_points(click_points)
